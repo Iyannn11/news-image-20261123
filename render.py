@@ -619,24 +619,24 @@ def render():
     sub = F(F_SERIF_I, 16)
     s = ("COP31 collapses with no deal \u00b7 Taiwan bans short selling after a "
          "17.5% rout \u00b7 NATO meets in Brussels")
-    d.text(((W - d.textlength(s, font=sub)) / 2, 86), s, font=sub, fill=DARKRED)
+    d.text(((W - d.textlength(s, font=sub)) / 2, 97), s, font=sub, fill=DARKRED)
 
     # ---- six-fact strip -----------------------------------------------------
-    fy = 92
+    fy = 114
     colw = CW / 6
     for i, (num, cap) in enumerate(FACTS):
         cx = MX + i * colw
-        nf = F(F_SERIF_B, 46)
+        nf = F(F_SERIF_B, 32)
         d.text((cx + (colw - d.textlength(num, font=nf)) / 2, fy), num,
                font=nf, fill=RED)
         cf = F(F_SANS, 10)
-        d.text((cx + (colw - d.textlength(cap, font=cf)) / 2, fy + 59), cap,
+        d.text((cx + (colw - d.textlength(cap, font=cf)) / 2, fy + 45), cap,
                font=cf, fill=GRAY)
         if i:
-            d.line([cx, fy + 2, cx, fy + 68], fill=(210, 200, 182), width=1)
+            d.line([cx, fy + 9, cx, fy + 58], fill=(210, 200, 182), width=1)
 
     # ---- THE DAY IN UTC strip ----------------------------------------------
-    uy = 166
+    uy = 179
     d.rectangle([0, uy, W, uy + 16], fill=NAVY)
     x = MX + 3
     tf = F(F_SANS_B, 11)
@@ -654,7 +654,7 @@ def render():
             x += 10
 
     # ---- region bar ----------------------------------------------------------
-    ry = 184
+    ry = 197
     total = sum(c for _, c, _ in REGIONS)
     # every segment gets a floor width so its label always fits
     floor = 84
@@ -673,7 +673,7 @@ def render():
         x += segw
 
     # ---- heroes ---------------------------------------------------------------
-    hy = 206
+    hy = 219
     hw, hh = 332, 224
     hgap = 7
     for i, (num, chp, caption, loc, headline, body, src) in enumerate(HEROES):
@@ -711,8 +711,8 @@ def render():
             yy += 13
 
     # ---- small cards (2 rows of 5) -------------------------------------------
-    sy0 = 436
-    sh = 146
+    sy0 = 449
+    sh = 140
     sw = 198
     sgap = 5
     for row in range(2):
