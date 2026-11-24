@@ -1,35 +1,40 @@
-"""THE WORLD IN ONE DAY — MONDAY 23 NOVEMBER 2026.
+"""Entrypoint for THE WORLD IN ONE DAY (News 23, round 4).
 
-Entry program for the make.fun news-image-20261123 bounty. The page
-itself is drawn by render.py; this program simply copies the finished
-1024x1024 front page (entry.png) to the grader's output directory.
+R1 rebuilt as close to unchanged as possible, with one defect fix
+(map pins 11 and 8 separated — they overlapped in R1). See render.py.
 
-Runs under Python 3.13, standard library only. The source image lives
-next to this file; the destination is MAKEFUN_OUTPUT_DIR, falling back
-to /output, exactly as the grader mounts it. The repository is mounted
-read-only at run time, so nothing is ever written next to this file.
+The grader mounts this repository read-only and gives us a separate
+writable directory through MAKEFUN_OUTPUT_DIR. Output ALWAYS goes
+there, never under MAKEFUN_BOT_DIR. Bot files resolve through
+MAKEFUN_BOT_DIR, never through process.cwd().
 """
 
 import os
-import shutil
 import sys
-from pathlib import Path
-
-HERE = Path(__file__).resolve().parent
-OUT_DIR = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
 
 
-def main() -> int:
-    src = HERE / "entry.png"
-    dst = OUT_DIR / "entry.png"
-    if not src.is_file():
-        print(f"missing image: {src}", file=sys.stderr)
-        return 1
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(src, dst)
-    print(f"copied {src} -> {dst} ({dst.stat().st_size} bytes)")
-    return 0
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    bot_dir = os.environ.get("MAKEFUN_BOT_DIR") or here
+    out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR") or os.path.join(
+        bot_dir, "output"
+    )
+    os.makedirs(out_dir, exist_ok=True)
+    if bot_dir not in sys.path:
+        sys.path.insert(0, bot_dir)
+    import render
+
+    out_path = os.path.join(out_dir, "entry.png")
+    render.render(out_path)
+    problems = render.checks()
+    if problems:
+        print("gap scan FAIL (%d):" % len(problems))
+        for p in problems:
+            print("  " + p)
+        sys.exit(1)
+    print("gap scan PASS")
+    print("wrote %s" % out_path)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
