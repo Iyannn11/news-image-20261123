@@ -1,11 +1,17 @@
 # THE WORLD IN ONE DAY — MONDAY 23 NOVEMBER 2026
 
+[![make.fun · news-image-20261123](https://make.fun/badge/news-image-20261123.svg)](https://make.fun/bounty/news-image-20261123?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261123)
+[![rank](https://make.fun/badge/news-image-20261123/Iyannn11/news-image-20261123/rank.svg)](https://make.fun/bounty/news-image-20261123/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261123)
+[![reward](https://make.fun/badge/news-image-20261123/Iyannn11/news-image-20261123/reward.svg)](https://make.fun/bounty/news-image-20261123?utm_source=github&utm_medium=readme&utm_campaign=news-image-20261123)
+
 ![News 23](https://img.shields.io/badge/make.fun-News%2023-14263e)
 ![Stories](https://img.shields.io/badge/stories-34-c42a2a)
 ![Regions](https://img.shields.io/badge/regions-7-14263e)
 ![Date checked](https://img.shields.io/badge/date%20checked-Mon%2023%20Nov%202026-1e7d32)
 ![Size](https://img.shields.io/badge/image-1024x1024-555555)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+Built for the make.fun news-image-20261123 bounty: https://make.fun/bounty/news-image-20261123
 
 One image summing up the world's news of **Monday 23 November 2026** for the
 make.fun **News 23** bounty (`news-image-20261123`). Round 3 — a fresh rebuild
