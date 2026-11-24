@@ -184,12 +184,13 @@ def ill_nato(draw, x, y, w, h):
                        fill=(150, 142, 122))
     # flagpoles row + small sign
     draw.rectangle([x, y + h - 12, x + w, y + h], fill=(40, 40, 60))
-    for i, c in enumerate([(220, 60, 60), (60, 140, 220), (250, 200, 60),
-                           (90, 190, 90), (240, 130, 60)]):
+    # flagpoles fly small NATO flags (dark blue, white compass rose)
+    for i in range(5):
         fx = x + 26 + i * 56
         draw.line([fx, y + h - 34, fx, y + h - 12], fill=(220, 220, 220), width=2)
-        draw.polygon([(fx, y + h - 34), (fx + 16, y + h - 29), (fx, y + h - 24)],
-                     fill=c)
+        draw.rectangle([fx, y + h - 34, fx + 16, y + h - 25],
+                       fill=(20, 40, 90), outline=(150, 150, 150), width=1)
+        _compass(draw, fx + 8, y + h - 29, 3)
     draw.rectangle([x + w - 58, y + h - 30, x + w - 14, y + h - 14],
                    fill=(255, 255, 255), outline=(150, 150, 150), width=1)
     draw.text((x + w - 52, y + h - 28), "NATO", font=SANS_B(9), fill=NAVY)
@@ -297,75 +298,182 @@ def banner(draw, x, y, w, h, kind):
 
 
 # ------------------------------------------------------------------- flags
+# Accurate miniature flags (vector shapes, fractions of w/h so they work
+# at 20x14 and 14x10). Replaces the old simplified flag() in render.py.
+def _star(d, cx, cy, r, fill, rot=-90):
+    """5-point star; rot = angle (deg) of the first point."""
+    pts = []
+    for i in range(10):
+        a = math.radians(rot + i * 36)
+        rr = r if i % 2 == 0 else r * 0.45
+        pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a)))
+    d.polygon(pts, fill=fill)
+
+
+def _starn(d, cx, cy, r, n, fill, rot=-90):
+    """n-point star (7-point for Australia)."""
+    pts = []
+    for i in range(2 * n):
+        a = math.radians(rot + i * 180 / n)
+        rr = r if i % 2 == 0 else r * 0.45
+        pts.append((cx + rr * math.cos(a), cy + rr * math.sin(a)))
+    d.polygon(pts, fill=fill)
+
+
+def _crescent(d, cx, cy, r, field, opening="right"):
+    """White crescent: white disc minus a field-coloured disc."""
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(255, 255, 255))
+    off = r * 0.45 if opening == "right" else -r * 0.45
+    d.ellipse([cx - r + off, cy - r, cx + r + off, cy + r], fill=field)
+
+
+def _trigram(d, x, y, bw, pat):
+    """One Korean trigram: 3 bars, pat=(top,mid,bot), True=solid."""
+    for i, solid in enumerate(pat):
+        by = y + i * 2
+        if solid:
+            d.rectangle([x, by, x + bw, by + 1], fill=(20, 20, 20))
+        else:
+            d.rectangle([x, by, x + bw / 2 - 0.5, by + 1], fill=(20, 20, 20))
+            d.rectangle([x + bw / 2 + 0.5, by, x + bw, by + 1],
+                        fill=(20, 20, 20))
+
+
+def _compass(d, cx, cy, r, fill=(255, 255, 255)):
+    """NATO compass rose: 4-point star + centre circle."""
+    pts = [(cx, cy - r), (cx + r * 0.22, cy - r * 0.22), (cx + r, cy),
+           (cx + r * 0.22, cy + r * 0.22), (cx, cy + r),
+           (cx - r * 0.22, cy + r * 0.22), (cx - r, cy),
+           (cx - r * 0.22, cy - r * 0.22)]
+    d.polygon(pts, fill=fill)
+    d.ellipse([cx - r * 0.22, cy - r * 0.22, cx + r * 0.22, cy + r * 0.22],
+              outline=fill, width=1)
+
+
 def flag(draw, x, y, w, h, kind):
     if kind == "kr":
         draw.rectangle([x, y, x + w, y + h], fill=(255, 255, 255))
-        draw.pieslice([x + w // 2 - 5, y + h // 2 - 5, x + w // 2 + 5,
-                       y + h // 2 + 5], 90, 270, fill=(200, 40, 40))
-        draw.pieslice([x + w // 2 - 5, y + h // 2 - 5, x + w // 2 + 5,
-                       y + h // 2 + 5], 270, 90, fill=(40, 80, 200))
-        draw.rectangle([x + 2, y + 2, x + 6, y + 4], fill=(30, 30, 30))
-        draw.rectangle([x + w - 6, y + h - 4, x + w - 2, y + h - 2],
-                       fill=(30, 30, 30))
+        # taegeuk: blue disc, red top half, S-curve small discs
+        r = h * 0.26
+        cx, cy = x + w / 2, y + h / 2
+        draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(0, 60, 160))
+        draw.pieslice([cx - r, cy - r, cx + r, cy + r], 180, 360,
+                      fill=(200, 40, 40))
+        draw.ellipse([cx, cy - r / 2, cx + r, cy + r / 2], fill=(200, 40, 40))
+        draw.ellipse([cx - r, cy - r / 2, cx, cy + r / 2], fill=(0, 60, 160))
+        # four trigrams: geon TL solid, gam TR broken-mid,
+        # ri BL broken top/bot, gon BR all broken
+        bw = max(3, w // 5)
+        _trigram(draw, x + 1, y + 1, bw, (True, True, True))
+        _trigram(draw, x + w - bw - 1, y + 1, bw, (True, False, True))
+        _trigram(draw, x + 1, y + h - 6, bw, (False, True, False))
+        _trigram(draw, x + w - bw - 1, y + h - 6, bw, (False, False, False))
     elif kind == "in":
         draw.rectangle([x, y, x + w, y + h // 3], fill=(255, 153, 51))
         draw.rectangle([x, y + h // 3, x + w, y + 2 * h // 3],
                        fill=(255, 255, 255))
         draw.rectangle([x, y + 2 * h // 3, x + w, y + h], fill=(19, 136, 8))
-        draw.ellipse([x + w // 2 - 2, y + h // 2 - 2, x + w // 2 + 2,
-                      y + h // 2 + 2], outline=(0, 0, 128), width=1)
+        # Ashoka chakra: navy ring + 8 spokes
+        cx, cy = x + w / 2, y + h / 2
+        cr = h * 0.20
+        draw.ellipse([cx - cr, cy - cr, cx + cr, cy + cr],
+                     outline=(0, 0, 128), width=1)
+        for i in range(8):
+            a = math.radians(i * 45)
+            draw.line([cx, cy, cx + cr * math.cos(a), cy + cr * math.sin(a)],
+                      fill=(0, 0, 128), width=1)
+        draw.ellipse([cx - 1, cy - 1, cx + 1, cy + 1], fill=(0, 0, 128))
     elif kind == "ly":
         draw.rectangle([x, y, x + w, y + h // 4], fill=(200, 40, 40))
         draw.rectangle([x, y + h // 4, x + w, y + 3 * h // 4], fill=(20, 20, 20))
         draw.rectangle([x, y + 3 * h // 4, x + w, y + h], fill=(0, 120, 60))
+        # white crescent + star centred in the black band
+        _crescent(draw, x + w * 0.46, y + h / 2, h * 0.17, (20, 20, 20))
+        _star(draw, x + w * 0.60, y + h / 2, h * 0.09, (255, 255, 255))
     elif kind == "au":
         draw.rectangle([x, y, x + w, y + h], fill=(0, 40, 120))
-        draw.rectangle([x, y, x + 8, y + 6], fill=(200, 40, 40))
-        for sx, sy in [(15, 4), (18, 9), (12, 10)]:
-            draw.regular_polygon((x + sx, y + sy, 2), 5, fill=(255, 255, 255))
+        # Union Jack canton (top-left half)
+        cw2, ch2 = w / 2, h / 2
+        draw.rectangle([x, y, x + cw2, y + ch2], fill=(0, 40, 120))
+        draw.line([x, y, x + cw2, y + ch2], fill=(255, 255, 255), width=1)
+        draw.line([x + cw2, y, x, y + ch2], fill=(255, 255, 255), width=1)
+        draw.rectangle([x + cw2 / 2 - 1, y, x + cw2 / 2 + 1, y + ch2],
+                       fill=(200, 40, 40))
+        draw.rectangle([x, y + ch2 / 2 - 1, x + cw2, y + ch2 / 2 + 1],
+                       fill=(200, 40, 40))
+        # Federation star below the canton
+        _starn(draw, x + w * 0.25, y + h * 0.74, h * 0.13, 7,
+               (255, 255, 255))
+        # Southern Cross (5 stars, right half)
+        _starn(draw, x + w * 0.70, y + h * 0.28, h * 0.11, 7, (255, 255, 255))
+        _starn(draw, x + w * 0.83, y + h * 0.42, h * 0.09, 7, (255, 255, 255))
+        _starn(draw, x + w * 0.72, y + h * 0.62, h * 0.09, 7, (255, 255, 255))
+        _starn(draw, x + w * 0.60, y + h * 0.55, h * 0.07, 7, (255, 255, 255))
+        _starn(draw, x + w * 0.91, y + h * 0.55, h * 0.06, 7, (255, 255, 255))
     elif kind == "fi":
         draw.rectangle([x, y, x + w, y + h], fill=(255, 255, 255))
-        draw.rectangle([x + 6, y, x + 9, y + h], fill=(0, 80, 160))
-        draw.rectangle([x, y + h // 2 - 2, x + w, y + h // 2 + 2],
+        vb = h * 0.22  # Nordic cross arm width
+        draw.rectangle([x + w * 0.26, y, x + w * 0.26 + vb, y + h],
+                       fill=(0, 80, 160))
+        draw.rectangle([x, y + h / 2 - vb / 2, x + w, y + h / 2 + vb / 2],
                        fill=(0, 80, 160))
     elif kind == "mm":
         draw.rectangle([x, y, x + w, y + h // 3], fill=(250, 210, 40))
         draw.rectangle([x, y + h // 3, x + w, y + 2 * h // 3],
                        fill=(40, 120, 70))
         draw.rectangle([x, y + 2 * h // 3, x + w, y + h], fill=(200, 50, 50))
-        draw.regular_polygon((x + w // 2, y + h // 2, 3), 5,
-                             fill=(255, 255, 255))
+        _star(draw, x + w / 2, y + h / 2, h * 0.30, (255, 255, 255))
     elif kind == "bh":
         draw.rectangle([x, y, x + w, y + h], fill=(200, 40, 40))
-        draw.polygon([(x, y), (x + 8, y), (x + 4, y + h // 4),
-                      (x + 8, y + h // 2), (x + 4, y + 3 * h // 4),
-                      (x + 8, y + h), (x, y + h)], fill=(255, 255, 255))
+        # white hoist band with 5 serrations
+        pts = [(x, y), (x + w * 0.30, y)]
+        for k in range(5):
+            pts.append((x + w * 0.16, y + (k + 0.5) * h / 5))
+            pts.append((x + w * 0.30, y + (k + 1) * h / 5))
+        pts.append((x, y + h))
+        draw.polygon(pts, fill=(255, 255, 255))
     elif kind == "lb":
         draw.rectangle([x, y, x + w, y + h // 4], fill=(200, 40, 40))
         draw.rectangle([x, y + h // 4, x + w, y + 3 * h // 4],
                        fill=(255, 255, 255))
         draw.rectangle([x, y + 3 * h // 4, x + w, y + h], fill=(200, 40, 40))
-        draw.ellipse([x + w // 2 - 2, y + h // 2 - 3, x + w // 2 + 2,
-                      y + h // 2 + 3], fill=(0, 120, 60))
+        # cedar: stacked green triangles + trunk, inside the white band
+        cx, cy = x + w / 2, y + h / 2
+        for hw, ay, by in [(0.10, -0.22, -0.07), (0.15, -0.07, 0.07),
+                           (0.20, 0.07, 0.22)]:
+            draw.polygon([(cx, cy + ay * h), (cx - hw * w, cy + by * h),
+                          (cx + hw * w, cy + by * h)], fill=(0, 120, 60))
+        draw.rectangle([cx - 0.7, cy + 0.22 * h, cx + 0.7, cy + 0.32 * h],
+                       fill=(120, 90, 60))
     elif kind == "dk":
         draw.rectangle([x, y, x + w, y + h], fill=(200, 40, 40))
-        draw.rectangle([x + 6, y, x + 9, y + h], fill=(255, 255, 255))
-        draw.rectangle([x, y + h // 2 - 2, x + w, y + h // 2 + 2],
+        vb = h * 0.22  # Dannebrog cross arm width
+        draw.rectangle([x + w * 0.26, y, x + w * 0.26 + vb, y + h],
+                       fill=(255, 255, 255))
+        draw.rectangle([x, y + h / 2 - vb / 2, x + w, y + h / 2 + vb / 2],
                        fill=(255, 255, 255))
     elif kind == "us":
-        for i in range(7):
-            draw.rectangle([x, y + i * h // 7, x + w, y + (i + 1) * h // 7],
+        sh = h / 13
+        for i in range(13):
+            draw.rectangle([x, y + i * sh, x + w, y + (i + 1) * sh],
                            fill=(200, 40, 40) if i % 2 == 0 else (255, 255, 255))
-        draw.rectangle([x, y, x + w // 2, y + 4 * h // 7], fill=(30, 50, 120))
-        for sx, sy in [(3, 2), (8, 4), (5, 6)]:
-            draw.regular_polygon((x + sx, y + sy, 1), 5, fill=(255, 255, 255))
+        # canton: 7 stripes tall, 40% wide; 50 stars as 1px dots
+        cw2, ch2 = w * 0.40, 7 * sh
+        draw.rectangle([x, y, x + cw2, y + ch2], fill=(30, 50, 120))
+        for r in range(9):
+            n = 6 if r % 2 == 0 else 5
+            for c in range(n):
+                sx = x + cw2 * (c + (1 if r % 2 else 0.5)) / 6
+                sy = y + ch2 * (r + 0.5) / 9
+                draw.point((sx, sy), fill=(255, 255, 255))
     elif kind == "eu":
         draw.rectangle([x, y, x + w, y + h], fill=(30, 60, 160))
-        for i in range(8):
-            a = math.radians(i * 45 - 90)
-            draw.regular_polygon((x + w // 2 + 6 * math.cos(a),
-                                  y + h // 2 + 4 * math.sin(a), 1), 5,
-                                 fill=(250, 220, 60))
+        cx, cy = x + w / 2, y + h / 2
+        rr = h * 0.30
+        for i in range(12):
+            a = math.radians(i * 30 - 90)
+            _star(draw, cx + rr * math.cos(a), cy + rr * math.sin(a),
+                  h * 0.075, (250, 220, 60))
     elif kind == "globe":
         draw.ellipse([x, y, x + w, y + h], fill=(140, 190, 230),
                      outline=(40, 90, 160), width=1)
@@ -375,56 +483,80 @@ def flag(draw, x, y, w, h, kind):
                   fill=(40, 90, 160), width=1)
     elif kind == "cn":
         draw.rectangle([x, y, x + w, y + h], fill=(220, 40, 40))
-        draw.regular_polygon((x + 4, y + 4, 3), 5, fill=(250, 220, 60))
-        draw.regular_polygon((x + 11, y + 3, 1), 5, fill=(250, 220, 60))
-        draw.regular_polygon((x + 13, y + 7, 1), 5, fill=(250, 220, 60))
+        _star(draw, x + w * 0.17, y + h * 0.28, h * 0.16, (250, 220, 60))
+        for sx, sy in [(0.42, 0.14), (0.50, 0.35), (0.42, 0.56), (0.25, 0.64)]:
+            _star(draw, x + w * sx, y + h * sy, h * 0.06, (250, 220, 60))
     elif kind == "vn":
         draw.rectangle([x, y, x + w, y + h], fill=(220, 40, 40))
-        draw.regular_polygon((x + w // 2, y + h // 2, 4), 5,
-                             fill=(250, 220, 60))
+        _star(draw, x + w / 2, y + h / 2, h * 0.30, (250, 220, 60))
     elif kind == "tw":
         draw.rectangle([x, y, x + w, y + h], fill=(200, 40, 40))
-        draw.rectangle([x, y, x + w // 2, y + h // 2], fill=(30, 60, 160))
-        draw.ellipse([x + 3, y + 2, x + 7, y + 6], fill=(255, 255, 255))
+        draw.rectangle([x, y, x + w / 2, y + h / 2], fill=(30, 60, 160))
+        # white sun with 12 rays in the canton
+        cx, cy = x + w / 4, y + h / 4
+        sr = h * 0.14
+        draw.ellipse([cx - sr, cy - sr, cx + sr, cy + sr], fill=(255, 255, 255))
+        for i in range(12):
+            a = math.radians(i * 30)
+            draw.line([cx + (sr + 0.5) * math.cos(a),
+                       cy + (sr + 0.5) * math.sin(a),
+                       cx + (sr + 1.5) * math.cos(a),
+                       cy + (sr + 1.5) * math.sin(a)],
+                      fill=(255, 255, 255), width=1)
     elif kind == "za":
-        draw.rectangle([x, y, x + w, y + h // 3], fill=(200, 40, 40))
-        draw.rectangle([x, y + h // 3, x + w, y + 2 * h // 3],
-                       fill=(255, 255, 255))
-        draw.rectangle([x, y + 2 * h // 3, x + w, y + h], fill=(30, 60, 160))
-        draw.line([x, y + h, x + w // 2, y + h // 2], fill=(0, 120, 60), width=2)
+        # red top, blue bottom; green Y with white fimbriation; black triangle
+        draw.rectangle([x, y, x + w, y + h / 2], fill=(200, 40, 40))
+        draw.rectangle([x, y + h / 2, x + w, y + h], fill=(30, 60, 160))
+        lw = max(3, int(h * 0.28))
+        gw = max(2, int(h * 0.16))
+        for col, wd in [((255, 255, 255), lw), ((0, 120, 60), gw)]:
+            draw.line([x, y + h * 0.30, x + w * 0.52, y + h / 2,
+                       x + w, y + h / 2], fill=col, width=wd, joint="curve")
+            draw.line([x, y + h * 0.70, x + w * 0.52, y + h / 2,
+                       x + w, y + h / 2], fill=col, width=wd, joint="curve")
+        draw.polygon([(x, y), (x, y + h), (x + w * 0.28, y + h / 2)],
+                     fill=(20, 20, 20))
     elif kind == "sa":
         draw.rectangle([x, y, x + w, y + h], fill=(0, 110, 60))
-        draw.line([x + 3, y + h // 2 - 1, x + w - 3, y + h // 2 - 1],
+        # shahada as white calligraphic strokes
+        for (sx, sy, ex, ey) in [(0.30, 0.30, 0.38, 0.34), (0.40, 0.28, 0.48, 0.36),
+                                 (0.50, 0.32, 0.58, 0.28), (0.60, 0.30, 0.68, 0.36),
+                                 (0.34, 0.38, 0.66, 0.38)]:
+            draw.line([x + w * sx, y + h * sy, x + w * ex, y + h * ey],
+                      fill=(255, 255, 255), width=1)
+        # sword below
+        draw.line([x + w * 0.28, y + h * 0.68, x + w * 0.72, y + h * 0.68],
                   fill=(255, 255, 255), width=1)
-        draw.line([x + 4, y + h - 3, x + w - 4, y + h - 3],
+        draw.line([x + w * 0.28, y + h * 0.62, x + w * 0.28, y + h * 0.74],
                   fill=(255, 255, 255), width=1)
     elif kind == "pk":
         draw.rectangle([x, y, x + w, y + h], fill=(0, 90, 50))
-        draw.rectangle([x, y, x + w // 4, y + h], fill=(255, 255, 255))
-        draw.ellipse([x + w // 2, y + h // 2 - 3, x + w // 2 + 6,
-                      y + h // 2 + 3], fill=(255, 255, 255))
-        draw.ellipse([x + w // 2 + 2, y + h // 2 - 3, x + w // 2 + 6,
-                      y + h // 2 + 3], fill=(0, 90, 50))
+        draw.rectangle([x, y, x + w / 4, y + h], fill=(255, 255, 255))
+        # white crescent + star in the green field
+        _crescent(draw, x + w * 0.60, y + h / 2, h * 0.20, (0, 90, 50))
+        _star(draw, x + w * 0.76, y + h / 2, h * 0.10, (255, 255, 255))
     elif kind == "bd":
         draw.rectangle([x, y, x + w, y + h], fill=(0, 110, 60))
-        draw.ellipse([x + w // 2 - 4, y + h // 2 - 4, x + w // 2 + 4,
-                      y + h // 2 + 4], fill=(200, 40, 40))
+        draw.ellipse([x + w * 0.45 - h * 0.30, y + h * 0.20,
+                      x + w * 0.45 + h * 0.30, y + h * 0.80], fill=(200, 40, 40))
     elif kind == "ph":
         draw.rectangle([x, y, x + w, y + h // 2], fill=(30, 80, 180))
         draw.rectangle([x, y + h // 2, x + w, y + h], fill=(200, 40, 40))
-        draw.polygon([(x, y), (x, y + h), (x + 8, y + h // 2)],
+        draw.polygon([(x, y), (x, y + h), (x + w * 0.42, y + h / 2)],
                      fill=(255, 255, 255))
+        # gold sun + 3 stars in the triangle
+        draw.ellipse([x + w * 0.13, y + h * 0.40, x + w * 0.22, y + h * 0.60],
+                     fill=(250, 220, 60))
+        for sx, sy in [(0.06, 0.16), (0.06, 0.84), (0.34, 0.50)]:
+            draw.point((x + w * sx, y + h * sy), fill=(250, 220, 60))
     elif kind == "tr":
         draw.rectangle([x, y, x + w, y + h], fill=(200, 40, 40))
-        draw.ellipse([x + 4, y + h // 2 - 4, x + 12, y + h // 2 + 4],
-                     fill=(255, 255, 255))
-        draw.ellipse([x + 6, y + h // 2 - 4, x + 12, y + h // 2 + 4],
-                     fill=(200, 40, 40))
-        draw.regular_polygon((x + 14, y + h // 2, 2), 5, fill=(255, 255, 255))
+        _crescent(draw, x + w * 0.38, y + h / 2, h * 0.28, (200, 40, 40))
+        _star(draw, x + w * 0.63, y + h / 2, h * 0.13, (255, 255, 255),
+              rot=180)
     elif kind == "nato":
         draw.rectangle([x, y, x + w, y + h], fill=(20, 40, 90))
-        draw.regular_polygon((x + w // 2, y + h // 2, 5), 4,
-                             fill=(255, 255, 255))
+        _compass(draw, x + w / 2, y + h / 2, h * 0.32)
     draw.rectangle([x, y, x + w, y + h], outline=(150, 150, 150), width=1)
 
 
@@ -825,7 +957,9 @@ def main():
                  hw - 74 - nw, line_h=12,
                  box=(x0 + 12 + nw, ry + 12, x0 + hw - 62, hero_y + hy),
                  max_lines=2)
-        pill(d, x0 + hw - 60, ry + 12, "REPORTED")
+        # REPORTED pill: fully inside the card (>=5px from the right edge;
+        # pill is 63px wide, so x0+hw-68 puts its right edge at x0+hw-5)
+        pill(d, x0 + hw - 68, ry + 12, "REPORTED")
     y = hero_y + hy + 6
 
     # ---- big dotted world map (R1 style + AWS upgrades)
@@ -856,17 +990,24 @@ def main():
             nt = str(s["n"])
             d.text((ncx - d.textlength(nt, font=nf2) / 2, ncy - 8), nt,
                    font=nf2, fill=(255, 255, 255))
-            # tiny topic icon top-right of the text area
-            topic_icon(d, x0 + cw - 19, y0 + 31, s["icon"])
+            # tiny topic icon INSIDE the banner, top-right, on a white disc
+            # (never in the headline row — it used to overlap headline text)
+            icx, icy = x0 + cw - 14, y0 + 16
+            d.ellipse([icx - 9, icy - 9, icx + 9, icy + 9],
+                      fill=(255, 255, 255), outline=(150, 150, 150), width=1)
+            topic_icon(d, icx - 6, icy - 6, s["icon"])
             ty = y0 + 31
             flag(d, x0 + 6, ty + 1, 20, 14, s["flag"])
             ty2 = flag_headline(d, x0 + 6, ty, s["head"], SERIF_B(13),
-                                cw - 12, 20, box=(x0, ty, x0 + cw, y0 + chh),
+                                cw - 12, 20, box=(x0, ty, x0 + cw - 6, y0 + chh),
                                 line_h=15)
             text_box(d, (x0 + 6, ty2 + 1), s["body"], SANS(11), GREY, cw - 12,
                      line_h=12, box=(x0, ty2 + 1, x0 + cw, y0 + chh - 18),
                      max_lines=2)
-            pill(d, x0 + cw - 54, y0 + chh - 17, "REPORTED")
+            # REPORTED pill: fully inside the card (>=5px from the right
+            # edge, >=4px from the bottom; pill is 63x14, so x0+cw-68 /
+            # y0+chh-18 puts its right edge at x0+cw-5, bottom at y0+chh-4)
+            pill(d, x0 + cw - 68, y0 + chh - 18, "REPORTED")
     y = y + 2 * chh + 6 + 6
 
     # ---- THE DAY IN UTC: 24-hour ruler with staggered story dots
@@ -914,8 +1055,9 @@ def main():
         num = f"{n}."
         d.text((M + 11, y), num, font=lf_b, fill=INK)
         flag(d, M + 36, y + 1, 14, 10, fl)
-        # headline (reserve room for the pill on the right)
-        pw = pill(d, W - M - 56, y - 1, "REPORTED")
+        # REPORTED pill: fully inside the row (>=5px from the right edge;
+        # pill is 63px wide, so W-M-68 puts its right edge at W-M-5)
+        pw = pill(d, W - M - 68, y - 1, "REPORTED")
         text_box(d, (M + 56, y), body, lf, INK, W - M - 56 - (M + 56),
                  line_h=13, box=(M + 56, y, W - M - 62, y + 13), max_lines=1)
         # thin dotted separator
